@@ -11,6 +11,7 @@ import {
   DateInput,
   ProgressBar,
   TextArea,
+  Link,
 } from "@hubspot/ui-extensions";
 
 hubspot.extend(({ context, actions }) => (
@@ -33,6 +34,7 @@ const INITIAL_TASKS = [
     startDate: null,
     endDate: null,
     currentNote: "",
+    currentLink: "",
     history: [],
   },
   {
@@ -43,6 +45,7 @@ const INITIAL_TASKS = [
     startDate: null,
     endDate: null,
     currentNote: "",
+    currentLink: "",
     history: [],
   },
 ];
@@ -74,11 +77,16 @@ const ChecklistCard = ({ actions }) => {
       prev.map((task) => {
         if (task.id !== id) return task;
         const trimmed = task.currentNote.trim();
-        if (!trimmed) return task;
+        const link = task.currentLink.trim();
+        if (!trimmed && !link) return task;
         return {
           ...task,
           currentNote: "",
-          history: [{ text: trimmed, date: formatDate() }, ...task.history],
+          currentLink: "",
+          history: [
+            { text: trimmed, link: link, date: formatDate() },
+            ...task.history,
+          ],
         };
       })
     );
@@ -97,6 +105,7 @@ const ChecklistCard = ({ actions }) => {
         startDate: null,
         endDate: null,
         currentNote: "",
+        currentLink: "",
         history: [],
       },
     ]);
@@ -115,7 +124,6 @@ const ChecklistCard = ({ actions }) => {
 
   return (
     <Flex direction="column" gap="small">
-      {/* Barra de progresso */}
       <Flex direction="row" align="center" gap="small">
         <ProgressBar value={percentage} minLabel="" maxLabel="" />
         <Text variant="microcopy" format={{ fontWeight: "demibold" }}>
@@ -193,7 +201,7 @@ const ChecklistCard = ({ actions }) => {
               />
             </Flex>
 
-            {/* Linha 3: observação + salvar */}
+            {/* Linha 3: observação + link + salvar */}
             <Flex direction="column" gap="extra-small">
               <TextArea
                 label="Nova observação"
@@ -202,12 +210,21 @@ const ChecklistCard = ({ actions }) => {
                 value={task.currentNote}
                 onChange={(val) => updateTask(task.id, { currentNote: val })}
               />
+              <Input
+                label="Link (opcional)"
+                name={`link-${task.id}`}
+                placeholder="https://..."
+                value={task.currentLink}
+                onChange={(val) => updateTask(task.id, { currentLink: val })}
+              />
               <Flex direction="row" justify="end">
                 <Button
                   variant="secondary"
                   size="xs"
                   onClick={() => saveNote(task.id)}
-                  disabled={!task.currentNote.trim()}
+                  disabled={
+                    !task.currentNote.trim() && !task.currentLink.trim()
+                  }
                 >
                   Salvar
                 </Button>
@@ -222,12 +239,17 @@ const ChecklistCard = ({ actions }) => {
                 </Text>
                 {task.history.map((entry, index) => (
                   <Flex key={index} direction="column" gap="extra-small">
-                    <Flex direction="row" justify="between">
-                      <Text variant="microcopy" format={{ color: "medium" }}>
-                        {entry.date}
-                      </Text>
-                    </Flex>
-                    <Text variant="microcopy">{entry.text}</Text>
+                    <Text variant="microcopy" format={{ color: "medium" }}>
+                      {entry.date}
+                    </Text>
+                    {entry.text ? (
+                      <Text variant="microcopy">{entry.text}</Text>
+                    ) : null}
+                    {entry.link ? (
+                      <Link href={entry.link} external>
+                        {entry.link}
+                      </Link>
+                    ) : null}
                     {index < task.history.length - 1 && <Divider />}
                   </Flex>
                 ))}
