@@ -18,8 +18,7 @@ hubspot.extend(({ context, actions }) => (
   <ChecklistCard context={context} actions={actions} />
 ));
 
-const WEBHOOK_URL =
-  "https://api-na1.hubapi.com/automation/v4/webhook-triggers/51207666/D2mTHMY";
+const WEBHOOK_URL = "https://hooks.zapier.com/hooks/catch/4619371/ux7b9z4/";
 
 const STATUS_OPTIONS = [
   { label: "Backlog", value: "backlog" },
