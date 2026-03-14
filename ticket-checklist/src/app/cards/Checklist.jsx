@@ -18,6 +18,9 @@ hubspot.extend(({ context, actions }) => (
   <ChecklistCard context={context} actions={actions} />
 ));
 
+const WEBHOOK_URL =
+  "https://api-na1.hubapi.com/automation/v4/webhook-triggers/51207666/D2mTHMY";
+
 const STATUS_OPTIONS = [
   { label: "Backlog", value: "backlog" },
   { label: "Doing", value: "doing" },
@@ -61,42 +64,60 @@ const formatDate = () => {
   });
 };
 
-const ChecklistCard = ({ actions }) => {
+const ChecklistCard = ({ context }) => {
   const [tasks, setTasks] = useState(INITIAL_TASKS);
   const [newTaskLabel, setNewTaskLabel] = useState("");
   const [nextId, setNextId] = useState(3);
 
+  const dispatchWebhook = async (updatedTasks) => {
+    try {
+      await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId: context.crm.objectId,
+          portalId: context.portal.id,
+          tasks: updatedTasks,
+        }),
+      });
+    } catch (err) {
+      console.error("Webhook error:", err);
+    }
+  };
+
   const updateTask = (id, changes) => {
-    setTasks((prev) =>
-      prev.map((task) => (task.id === id ? { ...task, ...changes } : task))
+    const updated = tasks.map((task) =>
+      task.id === id ? { ...task, ...changes } : task
     );
+    setTasks(updated);
+    dispatchWebhook(updated);
   };
 
   const saveNote = (id) => {
-    setTasks((prev) =>
-      prev.map((task) => {
-        if (task.id !== id) return task;
-        const trimmed = task.currentNote.trim();
-        const link = task.currentLink.trim();
-        if (!trimmed && !link) return task;
-        return {
-          ...task,
-          currentNote: "",
-          currentLink: "",
-          history: [
-            { text: trimmed, link: link, date: formatDate() },
-            ...task.history,
-          ],
-        };
-      })
-    );
+    const updated = tasks.map((task) => {
+      if (task.id !== id) return task;
+      const trimmed = task.currentNote?.trim();
+      const link = task.currentLink?.trim();
+      if (!trimmed && !link) return task;
+      return {
+        ...task,
+        currentNote: "",
+        currentLink: "",
+        history: [
+          { text: trimmed, link, date: formatDate() },
+          ...(task.history || []),
+        ],
+      };
+    });
+    setTasks(updated);
+    dispatchWebhook(updated);
   };
 
   const addTask = () => {
     const trimmed = newTaskLabel.trim();
     if (!trimmed) return;
-    setTasks((prev) => [
-      ...prev,
+    const updated = [
+      ...tasks,
       {
         id: nextId,
         label: trimmed,
@@ -108,13 +129,17 @@ const ChecklistCard = ({ actions }) => {
         currentLink: "",
         history: [],
       },
-    ]);
+    ];
+    setTasks(updated);
     setNextId((n) => n + 1);
     setNewTaskLabel("");
+    dispatchWebhook(updated);
   };
 
   const removeTask = (id) => {
-    setTasks((prev) => prev.filter((task) => task.id !== id));
+    const updated = tasks.filter((task) => task.id !== id);
+    setTasks(updated);
+    dispatchWebhook(updated);
   };
 
   const completedCount = tasks.filter((t) => t.checked).length;
@@ -146,7 +171,6 @@ const ChecklistCard = ({ actions }) => {
 
         {tasks.map((task) => (
           <Flex key={task.id} direction="column" gap="extra-small">
-            {/* Linha 1: checkbox + nome + remover */}
             <Flex direction="row" align="center" justify="between">
               <Flex direction="row" align="center" gap="extra-small">
                 <Checkbox
@@ -178,7 +202,6 @@ const ChecklistCard = ({ actions }) => {
               </Button>
             </Flex>
 
-            {/* Linha 2: status + datas */}
             <Flex direction="row" gap="small" align="end">
               <Select
                 label="Status"
@@ -201,20 +224,19 @@ const ChecklistCard = ({ actions }) => {
               />
             </Flex>
 
-            {/* Linha 3: observação + link + salvar */}
             <Flex direction="column" gap="extra-small">
               <TextArea
                 label="Nova observação"
                 name={`notes-${task.id}`}
                 placeholder="Adicione uma observação..."
-                value={task.currentNote}
+                value={task.currentNote || ""}
                 onChange={(val) => updateTask(task.id, { currentNote: val })}
               />
               <Input
                 label="Link (opcional)"
                 name={`link-${task.id}`}
                 placeholder="https://..."
-                value={task.currentLink}
+                value={task.currentLink || ""}
                 onChange={(val) => updateTask(task.id, { currentLink: val })}
               />
               <Flex direction="row" justify="end">
@@ -223,16 +245,15 @@ const ChecklistCard = ({ actions }) => {
                   size="xs"
                   onClick={() => saveNote(task.id)}
                   disabled={
-                    !task.currentNote.trim() && !task.currentLink.trim()
+                    !task.currentNote?.trim() && !task.currentLink?.trim()
                   }
                 >
-                  Salvar
+                  Salvar observação
                 </Button>
               </Flex>
             </Flex>
 
-            {/* Histórico de observações */}
-            {task.history.length > 0 && (
+            {(task.history || []).length > 0 && (
               <Flex direction="column" gap="extra-small">
                 <Text variant="microcopy" format={{ fontWeight: "demibold" }}>
                   Histórico
@@ -261,7 +282,6 @@ const ChecklistCard = ({ actions }) => {
         ))}
       </Flex>
 
-      {/* Adicionar nova tarefa */}
       <Flex direction="row" gap="small" align="end">
         <Input
           label="Nova tarefa"

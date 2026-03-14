@@ -1,10 +1,10 @@
 {
-    "uid": "checklist-card",
-    "type": "card",
-    "config": {
-      "name": "Checklist",
-      "location": "crm.record.tab",
-      "entrypoint": "/app/cards/Checklist.jsx",
-      "objectTypes": ["tickets"]
-    }
+  "uid": "checklist-card",
+  "type": "card",
+  "config": {
+    "name": "Checklist",
+    "location": "crm.record.tab",
+    "entrypoint": "/app/cards/Checklist.jsx",
+    "objectTypes": ["tickets"]
   }
+}
