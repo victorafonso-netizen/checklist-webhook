@@ -1,0 +1,18 @@
+{
+    "uid": "ticket-checklist-app",
+    "type": "app",
+    "config": {
+      "name": "Ticket Checklist",
+      "description": "Checklist de tarefas para tickets",
+      "distribution": "private",
+      "permittedUrls": {
+        "fetch": [],
+        "iframe": [],
+        "img": []
+      },
+      "auth": {
+        "type": "static",
+        "requiredScopes": ["oauth", "tickets"]
+      }
+    }
+  }
